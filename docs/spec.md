@@ -207,6 +207,7 @@ Testes unitários cobrem tudo desde o primeiro commit; o pipeline de deploy vem 
 - Regras de negócio em funções puras, testadas sem banco nem rede: cálculo do mês de competência pela fatura, parsing dos lançamentos, regras da lista de compras.
 - Chamadas ao modelo de IA e ao Telegram isoladas atrás de interfaces e substituídas por dublês nos testes unitários.
 - Testes de integração com Postgres real em container, separados dos unitários.
+- Desenvolvimento e CI rodam via Docker Compose, sem instalar Python ou ferramentas no host.
 - `ruff` para lint e formatação, rodando no CI e em pre-commit.
 
 **Repositório e pipeline**
