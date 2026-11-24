@@ -55,7 +55,7 @@ Legenda: **Entregas** (o que é produzido), **Testes** (o que precisa estar cobe
 
 ### 2.3 Seed
 
-- `python -m financas.seed config/seed.local.yaml`: pessoas, formas de pagamento (com usuários permitidos e datas do cartão) e categorias iniciais da spec. Idempotente (upsert por nome/e-mail); não apaga o que foi criado pela família.
+- `python -m financas.seed config/seed.local.yaml`: pessoas, formas de pagamento (com usuários permitidos e datas do cartão) e categorias iniciais da spec. Idempotente: pessoas e formas atualizadas por nome; categorias iniciais só entram com a tabela vazia, para não recriar as que a família renomeou; nada é apagado.
 - Categorias iniciais ficam no código (não são dado pessoal); pessoas e formas só no YAML.
 
 **Testes**

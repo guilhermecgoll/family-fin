@@ -14,7 +14,12 @@ scripts/criar-env.sh          # cria o .env com senha aleatória do banco (uma v
 docker compose build dev      # imagem de desenvolvimento
 docker compose up -d db       # banco da aplicação
 docker compose run --rm --no-deps dev uv run alembic upgrade head
+
+# dados da família: copie config/seed.example.yaml para config/seed.local.yaml e edite
+docker compose run --rm --no-deps dev uv run python -m financas.seed config/seed.local.yaml
 ```
+
+O seed pode ser rodado de novo depois de editar o arquivo: atualiza pessoas e formas de pagamento pelo nome e não duplica nada.
 
 Testes e qualidade:
 
