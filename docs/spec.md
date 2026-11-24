@@ -27,7 +27,9 @@ O bot é criado pelo BotFather e não precisa de número próprio: cada membro c
 2. O modelo de IA extrai valor, descrição, data, categoria e forma de pagamento.
 3. O bot responde com o resumo estruturado do lançamento e botões para confirmar ou corrigir.
 4. Campos ausentes viram uma pergunta curta (ex.: "Qual forma de pagamento?" com as opções da pessoa).
-5. Confirmado, o lançamento é gravado com o autor e a data real. Logo após gravar, um botão "desfazer" permite apagá-lo.
+5. Confirmado, o lançamento é gravado com o autor e a data real. Logo após gravar, um botão "desfazer" permite apagá-lo; no bot ele vale por 10 minutos e só para o autor. Depois disso, o lançamento é desfeito pela página web, a qualquer momento.
+
+**Desfazer:** desfazer um lançamento parcelado remove a compra com todas as parcelas e adiantamentos; desfazer um adiantamento remove o lançamento do valor pago e devolve as parcelas abatidas ao status `ativo`.
 
 Texto sem data assume a data da mensagem, no fuso `America/Sao_Paulo` (configurável). Sem forma de pagamento, o bot pergunta em vez de chutar. As opções de forma de pagamento oferecidas são só as que a pessoa pode usar.
 
@@ -134,23 +136,26 @@ A visão principal é o mês de competência: quanto entrou, quanto saiu e o sal
 - **Evolução:** comparação mês a mês.
 - **Consulta pelo bot:** perguntas curtas como "quanto gastamos com mercado este mês?".
 
-Relatórios e lista de compras ficam numa página web pensada para o celular. Ela roda em container num servidor doméstico, exposta por um Cloudflare Tunnel com Cloudflare Access na frente: cada membro entra com o próprio e-mail, e o app identifica quem está usando pelo cabeçalho com o e-mail que a Cloudflare repassa, sem login próprio. Assim a lista funciona no mercado desde o primeiro dia.
+Relatórios e lista de compras ficam numa página web pensada para o celular. Ela roda em container num servidor doméstico, exposta por um Cloudflare Tunnel com Cloudflare Access na frente: cada membro entra com o próprio e-mail, e o app identifica quem está usando pelo cabeçalho com o e-mail que a Cloudflare repassa, sem login próprio. O e-mail só é aceito depois de validar o token assinado que a Cloudflare envia junto (`Cf-Access-Jwt-Assertion`), para que uma requisição que chegue ao container por fora do túnel não consiga se passar por um membro. Assim a lista funciona no mercado desde o primeiro dia.
 
 ## Lista de compras
 
-A lista é montada antes do mercado, marcada durante a compra e reaproveitada na próxima.
+A lista funciona como uma nota de lista permanente: é montada antes do mercado, marcada durante a compra e reaproveitada na próxima sem duplicar itens.
 
-- **Catálogo da família:** itens permanentes (água, pão, macarrão, frutas…), criados automaticamente quando aparecem numa lista pela primeira vez.
-- **Lista / sessão de compra:** cada ida ao mercado é uma sessão com os itens escolhidos; durante a compra, cada um marca o que já foi para o carrinho e vê o que falta.
-- **Uso compartilhado:** todos veem e marcam a mesma lista ao mesmo tempo.
-- **Reaproveitamento:** ao criar uma nova lista, dá para puxar os itens frequentes ou os que ficaram sem marcar na última sessão.
-- **Histórico:** cada sessão fica guardada com os itens comprados, base para o histórico de preços nas fases seguintes.
+- **Várias listas com nome:** a família pode ter várias listas ao mesmo tempo, cada uma com um nome ("Mercado", "Festa de Natal"…). Uma lista é permanente: não há "nova lista do mercado" a cada ida, a mesma "Mercado" é reusada. Listas que não servem mais podem ser arquivadas.
+- **Duas seções:** em cima, os itens pendentes (o que falta comprar); embaixo, recolhida e com contador, a seção de itens comprados (marcados). Marcar um item o move para baixo; desmarcar o devolve para cima.
+- **Ordem:** os pendentes têm ordem manual, reordenada arrastando; item adicionado ou que volta dos comprados entra no fim dos pendentes. Os comprados ficam sempre em ordem alfabética (ignorando maiúsculas e acentos). A reordenação também é sincronizada em tempo real.
+- **Um item aparece uma vez por lista:** cada item existe no máximo uma vez em cada lista, pendente ou comprado. Nada é inserido automaticamente; a pessoa escolhe o que volta para cima.
+- **Sugestão ao digitar:** ao digitar um item novo, o app sugere itens já existentes, primeiro os comprados da própria lista e depois os do catálogo da família. Aceitar uma sugestão de item comprado o move de volta para os pendentes, em vez de criar outro; digitar o nome de um item que já está pendente não duplica. A comparação ignora maiúsculas, acentos e espaços extras ("agua" encontra "Água").
+- **Catálogo da família:** todo item que já apareceu em alguma lista, compartilhado entre as listas e usado nas sugestões. Um item novo entra no catálogo automaticamente.
+- **Uso compartilhado em tempo real:** todos veem e marcam a mesma lista ao mesmo tempo; qualquer alteração (adicionar, marcar, desmarcar, remover), feita na web ou pelo bot, aparece nos outros aparelhos em poucos segundos, sem recarregar a página.
+- **Histórico:** cada vez que um item é marcado como comprado fica registrado (item, lista, quem, quando), base para o histórico de preços nas fases seguintes.
 
-Itens podem ser adicionados pelo bot ("adiciona leite e ovos na lista"); a marcação durante a compra é feita na página web.
+Itens podem ser adicionados pelo bot ("adiciona leite e ovos na lista"), com a mesma regra de não duplicar: item comprado volta para os pendentes, item já pendente fica como está. Se o texto citar a lista ("na lista da festa"), o item vai para ela; se houver uma só lista, vai para essa; com várias, o bot pergunta com botões; sem nenhuma, cria uma "Mercado". A marcação durante a compra é feita na página web.
 
 ## Modelo de dados inicial
 
-Nove entidades cobrem a fase 1; o mês de competência é calculado e gravado no lançamento para simplificar os relatórios.
+Dez entidades cobrem a fase 1; o mês de competência é calculado e gravado no lançamento para simplificar os relatórios.
 
 | Entidade | Campos principais | Relaciona com |
 | --- | --- | --- |
@@ -160,9 +165,10 @@ Nove entidades cobrem a fase 1; o mês de competência é calculado e gravado no
 | Lançamento | tipo, valor, descrição, data_real, mes_competencia, registrado_em, status (ativo/antecipada), compra_parcelada?, numero_parcela?, eh_adiantamento | Pessoa, Categoria, FormaPagamento, CompraParcelada, Comprovante |
 | CompraParcelada | descrição, valor_total, num_parcelas, data_real | Lançamento |
 | Comprovante | imagem (bytea), mime, tamanho, criado_em | Lançamento |
-| Item | nome | ItemLista |
-| ListaCompras | criada_em, status (aberta/concluída) | ItemLista |
-| ItemLista | marcado, quantidade?, marcado_por? | ListaCompras, Item |
+| Item | nome, nome_normalizado (único) | ItemLista |
+| ListaCompras | nome, criada_em, arquivada | ItemLista |
+| ItemLista | marcado, posicao, quantidade?, marcado_por?, atualizado_em (único por lista + item) | ListaCompras, Item |
+| CompraItem | marcado_em, marcado_por | ItemLista (histórico de marcações) |
 
 Campos com `?` são opcionais; fechamento e vencimento só existem no tipo crédito.
 

@@ -32,7 +32,8 @@ migrations/      # Alembic
 tests/
   unit/          # sem banco, sem rede
   integration/   # Postgres real em container
-docs/specs/spec.md
+docs/spec.md
+docs/plan.md
 docker-compose.yml
 ```
 
