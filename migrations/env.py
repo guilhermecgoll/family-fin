@@ -3,6 +3,7 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import create_engine, pool
 
+import financas.adapters.db.modelos  # noqa: F401 - registra as tabelas no metadata
 from financas.adapters.db.base import Base
 from financas.config import ConfiguracaoBase
 

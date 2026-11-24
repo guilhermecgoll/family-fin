@@ -68,6 +68,8 @@ docker compose run --rm --no-deps dev sh -c "uv run ruff check . && uv run ruff 
 docker compose run --rm --no-deps dev uv lock         # atualizar o uv.lock
 docker compose up -d db                               # subir o banco
 docker compose run --rm --no-deps dev uv run alembic upgrade head  # aplicar migrações
+docker compose run --rm --no-deps dev uv run python -m financas.seed config/seed.local.yaml  # carregar seed
+docker compose run --rm --no-deps dev uv run alembic revision --autogenerate -m "<descrição>"  # nova migração (revisar o arquivo gerado)
 docker compose up -d --build                          # subir tudo
 ```
 

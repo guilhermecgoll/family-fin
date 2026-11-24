@@ -160,9 +160,9 @@ Dez entidades cobrem a fase 1; o mês de competência é calculado e gravado no 
 | Entidade | Campos principais | Relaciona com |
 | --- | --- | --- |
 | Pessoa | nome, telegram_user_id, email | FormaPagamento, Lançamento |
-| Categoria | nome, tipo (despesa/receita) | Lançamento |
+| Categoria | nome, tipo (despesa/receita), arquivada | Lançamento |
 | FormaPagamento | nome, tipo, dono, usuários_permitidos, dia_fechamento?, fecha_ultimo_dia?, dia_vencimento? | Pessoa, Lançamento |
-| Lançamento | tipo, valor, descrição, data_real, mes_competencia, registrado_em, status (ativo/antecipada), compra_parcelada?, numero_parcela?, eh_adiantamento | Pessoa, Categoria, FormaPagamento, CompraParcelada, Comprovante |
+| Lançamento | tipo, valor, descrição, data_real, mes_competencia, registrado_em, pessoa (a quem pertence), autor (quem registrou), status (ativo/antecipada), compra_parcelada?, numero_parcela?, eh_adiantamento | Pessoa, Categoria, FormaPagamento, CompraParcelada, Comprovante |
 | CompraParcelada | descrição, valor_total, num_parcelas, data_real | Lançamento |
 | Comprovante | imagem (bytea), mime, tamanho, criado_em | Lançamento |
 | Item | nome, nome_normalizado (único) | ItemLista |
@@ -170,7 +170,7 @@ Dez entidades cobrem a fase 1; o mês de competência é calculado e gravado no 
 | ItemLista | marcado, posicao, quantidade?, marcado_por?, atualizado_em (único por lista + item) | ListaCompras, Item |
 | CompraItem | marcado_em, marcado_por | ItemLista (histórico de marcações) |
 
-Campos com `?` são opcionais; fechamento e vencimento só existem no tipo crédito.
+Campos com `?` são opcionais; fechamento e vencimento só existem no tipo crédito. Listas exibidas em ordem alfabética (categorias, formas, itens comprados) ignoram acentos e maiúsculas, independentemente da collation do banco.
 
 ## Stack e hospedagem
 
