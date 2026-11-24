@@ -32,7 +32,7 @@ migrations/      # Alembic
 tests/
   unit/          # sem banco, sem rede
   integration/   # Postgres real em container
-docs/spec.md
+docs/specs/spec.md
 docker-compose.yml
 ```
 
