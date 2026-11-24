@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # uv falha se o uv.lock estiver desatualizado em relação ao pyproject.toml.
+  UV_LOCKED: "1"
+
+# Nunca usar runner self-hosted aqui: este workflow roda em pull requests.
+# Os comandos são os mesmos do desenvolvimento local, via docker compose.
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read # gitleaks lista os commits do PR
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - run: scripts/criar-env.sh
+      - run: docker compose build dev
+      - run: docker compose run --rm --no-deps -e UV_LOCKED dev uv run ruff check .
+      - run: docker compose run --rm --no-deps -e UV_LOCKED dev uv run ruff format --check .
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: scripts/criar-env.sh
+      - run: docker compose build dev
+      - name: Testes unitários e de integração com cobertura
+        run: >-
+          docker compose run --rm -e UV_LOCKED -e EXIGIR_BANCO_TESTE=1 dev
+          uv run pytest --cov=financas --cov-report=term-missing --cov-fail-under=90
+      - if: always()
+        run: docker compose --profile dev down -v

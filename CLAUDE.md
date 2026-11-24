@@ -52,19 +52,23 @@ docker-compose.yml
 ## Testes e qualidade
 
 - Toda funcionalidade nova vem com testes unitários. Cobertura mínima de 90%; o CI falha abaixo disso.
-- `pytest tests/unit` precisa rodar sem Docker nem rede.
+- `pytest tests/unit` precisa rodar sem banco nem rede.
+- Desenvolvimento e CI rodam tudo via `docker compose` (serviço `dev`, profile `dev`); nada é instalado no host além do Docker.
 - Testes de integração em `tests/integration`, contra Postgres em container.
 - `ruff check` e `ruff format` sem erros antes de qualquer commit.
 
 ## Comandos
 
 ```bash
-uv sync                                  # instalar dependências
-uv run pytest tests/unit                 # testes unitários
-uv run pytest --cov=financas --cov-fail-under=90
-uv run ruff check . && uv run ruff format --check .
-uv run alembic upgrade head              # aplicar migrações
-docker compose up -d --build             # subir tudo
+scripts/criar-env.sh                                  # gerar o .env (uma vez)
+docker compose build dev                              # imagem de desenvolvimento
+docker compose run --rm dev uv run pytest tests/unit  # testes unitários
+docker compose run --rm dev uv run pytest --cov=financas --cov-fail-under=90
+docker compose run --rm --no-deps dev sh -c "uv run ruff check . && uv run ruff format --check ."
+docker compose run --rm --no-deps dev uv lock         # atualizar o uv.lock
+docker compose up -d db                               # subir o banco
+docker compose run --rm --no-deps dev uv run alembic upgrade head  # aplicar migrações
+docker compose up -d --build                          # subir tudo
 ```
 
 ## Ordem de implementação sugerida

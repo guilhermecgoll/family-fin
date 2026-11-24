@@ -1,0 +1,30 @@
+# Opcional: exige o pre-commit no host (ex.: `pipx install pre-commit` no WSL).
+# Tudo roda em container; o CI aplica as mesmas checagens de qualquer forma.
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-yaml
+      - id: check-added-large-files
+
+  # Repositório público: barra segredos antes do commit.
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.24.2
+    hooks:
+      - id: gitleaks-docker
+
+  # Ruff pela versão travada no uv.lock, a mesma do CI.
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: docker compose run --rm --no-deps -T dev uv run ruff check --fix
+        language: system
+        types: [python]
+      - id: ruff-format
+        name: ruff format
+        entry: docker compose run --rm --no-deps -T dev uv run ruff format
+        language: system
+        types: [python]

@@ -10,25 +10,25 @@ Legenda: **Entregas** (o que é produzido), **Testes** (o que precisa estar cobe
 
 **Entregas**
 
-- `pyproject.toml` gerenciado por `uv`: Python 3.12+, pacote `financas` em `src/`, dependências de runtime e grupo `dev` (pytest, pytest-cov, ruff, testcontainers[postgres], pre-commit).
+- `pyproject.toml` gerenciado por `uv`: Python 3.12+, pacote `financas` em `src/`, dependências de runtime e grupo `dev` (pytest, pytest-cov, ruff). Nada instalado no host: `Dockerfile` com estágio `dev` (uv dentro da imagem, venv em volume) e `scripts/criar-env.sh` para gerar o `.env` com senha aleatória do banco.
 - Estrutura de pastas do `CLAUDE.md`, com `__init__.py` vazios.
 - `src/financas/config.py` com `pydantic-settings`: `DATABASE_URL`, `TELEGRAM_BOT_TOKEN`, `GEMINI_API_KEY`, `GEMINI_MODEL`, `TELEGRAM_ALLOWED_IDS`, `ACCESS_ALLOWED_EMAILS`, `TIMEZONE` (padrão `America/Sao_Paulo`), `APP_ENV` (`dev`/`prod`). Nenhum valor padrão para segredos.
-- `docker-compose.yml` só com `db` (Postgres 16, volume nomeado, healthcheck). Os demais serviços entram nas etapas em que forem necessários.
+- `docker-compose.yml` com `db` (Postgres 16, volume nomeado, healthcheck) e, no profile `dev`, o serviço `dev` (ferramentas) e o `db-test` (Postgres em memória para os testes de integração). Os demais serviços entram nas etapas em que forem necessários.
 - Alembic configurado (`alembic.ini`, `migrations/env.py` lendo `DATABASE_URL` de `config.py`, metadata do SQLAlchemy). Sem migrações ainda.
 - `ruff` configurado no `pyproject.toml` (regras: E, F, I, UP, B, SIM, S para segurança; linha 100).
 - `pytest` configurado: `testpaths`, marcador `integration`, `--strict-markers`.
-- `.pre-commit-config.yaml`: ruff, ruff-format, `gitleaks` (repositório público) e checagens básicas (fim de arquivo, YAML).
+- `.pre-commit-config.yaml` (opcional, exige pre-commit no host): ruff e ruff-format via container, `gitleaks` via Docker (repositório público) e checagens básicas.
 - `.gitignore` incluindo `.env`, `config/seed.local.yaml`, `.venv`, caches.
 - `.env.example` e `config/seed.example.yaml` com dados fictícios.
-- `.github/workflows/ci.yml`: gatilhos `push` e `pull_request`; `runs-on: ubuntu-latest` (nunca self-hosted); jobs `lint` (ruff + gitleaks) e `test` (unitários e integração com testcontainers, cobertura combinada com `--cov-fail-under=90`). Permissões mínimas (`contents: read`).
+- `.github/workflows/ci.yml`: gatilhos `push` e `pull_request`; `runs-on: ubuntu-latest` (nunca self-hosted); jobs `lint` (ruff + gitleaks) e `test` (unitários e integração contra o `db-test`, cobertura combinada com `--cov-fail-under=90`). Permissões mínimas (`contents: read`).
 - README com os comandos de desenvolvimento.
 
 **Testes**
 
 - `config.py`: leitura de variáveis, parsing das listas de IDs/e-mails, erro quando segredo obrigatório falta.
-- Teste de integração de fumaça: sobe Postgres via testcontainers e roda `alembic upgrade head`.
+- Teste de integração de fumaça: roda `alembic upgrade head` e `downgrade base` contra o `db-test`.
 
-**Pronto quando** o CI passa no GitHub, `uv run pytest tests/unit` roda sem Docker nem rede e `docker compose up -d db` sobe o banco saudável.
+**Pronto quando** o CI passa no GitHub, `docker compose run --rm dev uv run pytest tests/unit` roda sem banco nem rede e `docker compose up -d db` sobe o banco saudável.
 
 ---
 
@@ -62,7 +62,7 @@ Legenda: **Entregas** (o que é produzido), **Testes** (o que precisa estar cobe
 
 - Unitários com tabela de casos para `mes_competencia`: os dois exemplos da spec, compra no dia do fechamento, virada de ano, fevereiro com fechamento 30/31, ano bissexto, vencimento antes/depois do fechamento.
 - Parcelamento: divisão exata e com resto, valor da parcela informado, parcelas atravessando o ano; antecipação do exemplo da spec (10x, na parcela 3, adianta 5 → abate 6–10), quantidade inválida, data de solicitação após um fechamento.
-- Integração: migração aplica e reverte; repositórios gravam e leem; seed rodado duas vezes não duplica.
+- Integração (contra o `db-test`): migração aplica e reverte; repositórios gravam e leem; seed rodado duas vezes não duplica.
 
 **Pronto quando** o domínio está coberto por testes de tabela e `alembic upgrade head` + seed populam um banco vazio.
 
@@ -211,4 +211,3 @@ Modelo de lista permanente, no estilo de uma nota de lista: pendentes em cima, c
 ## Pendências para decidir
 
 1. **Comprovante em PDF**: fora da fase 1, salvo pedido.
-2. **Ambiente de desenvolvimento**: testes de integração exigem Docker (Docker Desktop no Windows ou WSL).

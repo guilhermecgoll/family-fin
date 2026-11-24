@@ -1,0 +1,42 @@
+# Exemplo com dados fictícios. Copie para config/seed.local.yaml (fora do Git) com os dados reais.
+# As categorias iniciais ficam no código; aqui só pessoas e formas de pagamento.
+
+pessoas:
+  - nome: Ana
+    email: ana@example.com
+    telegram_user_id: 100000001
+  - nome: Bruno
+    email: bruno@example.com
+    telegram_user_id: 100000002
+
+formas_pagamento:
+  - nome: Dinheiro
+    tipo: dinheiro
+    dono: familia
+
+  - nome: Pix Ana
+    tipo: pix
+    dono: Ana
+
+  - nome: Débito Bruno
+    tipo: debito
+    dono: Bruno
+
+  - nome: VR Ana
+    tipo: vale_refeicao
+    dono: Ana
+
+  # Fechamento no último dia do mês, vencimento no dia 7; Bruno é adicional.
+  - nome: Crédito Ana
+    tipo: credito
+    dono: Ana
+    usuarios: [Ana, Bruno]
+    fechamento: ultimo_dia
+    vencimento: 7
+
+  # Fechamento no dia 3, vencimento no dia 12.
+  - nome: Crédito Bruno
+    tipo: credito
+    dono: Bruno
+    fechamento: 3
+    vencimento: 12
